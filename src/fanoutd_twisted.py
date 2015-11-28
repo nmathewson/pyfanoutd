@@ -7,6 +7,7 @@ import twisted.internet.protocol
 class FanoutdProtocol(fanoutd.PubSubClient,
                       twisted.protocols.basic.LineReceiver):
 
+    delimiter = '\n'
     MAX_LENGTH = 256
     def __init__(self, subs):
         fanoutd.PubSubClient.__init__(self, subs)
