@@ -2,9 +2,8 @@
 minimal pure-python clone of https://github.com/travisghansen/fanout/
 
 For use with sparkleshare.  I haven't tested it with sparkleshare
-yet though.
+yet though.  It probably needs more polishing.
 
-Not very efficient in its network protocols; would be trivial to
-migrate to twisted for better performance.
+It has an asyncore backend and a twisted backend.
 
 Dedicated under cc0; see doc/cc0.txt for more info.

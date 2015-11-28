@@ -4,16 +4,9 @@
    For use with sparkleshare.  I haven't tested it with sparkleshare
    yet though.
 
-   not very efficient in its network protocols; would be trivial to
-   migrate to twisted for better performance.
-
    dedicated under cc0; see doc/cc0.txt for more info.
 """
 
-import asynchat
-import asyncore
-import re
-import socket
 import time
 
 class Subscriptions(object):
@@ -56,16 +49,14 @@ class Subscriptions(object):
         for client in s:
             client.send(msg)
 
-class PubSubClient(asynchat.async_chat):
+
+class PubSubClient(object):
     COMMANDS = {"ping" : 0, "info" : 0,
                 "subscribe" : 1, "unsubscribe" : 1,
                 "announce" : 2}
 
     RESERVED_CHANNELS = ("all", "debug")
-    def __init__(self, sock, subscriptions):
-        asynchat.async_chat.__init__(self, sock=sock)
-        self.inbuf = []
-        self.set_terminator("\n")
+    def __init__(self, subscriptions):
         self._subs = subscriptions
 
     def __eq__(self, other):
@@ -73,14 +64,6 @@ class PubSubClient(asynchat.async_chat):
 
     def __hash__(self):
         return id(self)
-
-    def collect_incoming_data(self, data):
-        self.inbuf.append(data)
-
-    def found_terminator(self):
-        inp = "".join(self.inbuf)
-        self.inbuf = []
-        self.run_command(inp)
 
     def run_command(self, command):
         c = command.strip().split(None, 2) # 2 is a kludge.
@@ -92,7 +75,6 @@ class PubSubClient(asynchat.async_chat):
             self.send("debug!bad_num_arguments\n")
         else:
             getattr(self, "do_cmd_"+c[0])(*c[1:])
-
 
     def do_cmd_ping(self):
         self.send("{0}\n".format(int(time.time())))
@@ -115,28 +97,5 @@ class PubSubClient(asynchat.async_chat):
     def do_cmd_announce(self, key, message):
         self._subs.announce(key, message)
 
-    def handle_close(self):
-        self._subs.rmClient(self)
-        self.close()
 
-class FanoutServer(asyncore.dispatcher):
-    def __init__(self, family, host, port, subs):
-        asyncore.dispatcher.__init__(self)
-        self._subs = subs
-        self.create_socket(family, socket.SOCK_STREAM)
-        self.set_reuse_addr()
-        self.bind((host, port))
-        self.listen(127)
 
-    def handle_accept(self):
-        pair = self.accept()
-        if pair == None:
-            return
-        sock, addr = pair
-        handler = PubSubClient(sock, self._subs)
-        self._subs.addClient(handler)
-
-s = Subscriptions()
-f = FanoutServer(socket.AF_INET, "localhost", 9999, s)
-
-asyncore.loop()
