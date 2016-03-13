@@ -43,6 +43,6 @@ class AsyncoreFanoutServer(asyncore.dispatcher):
         self._subs.addClient(handler)
 
 s = fanoutd.Subscriptions()
-f = AsyncoreFanoutServer(socket.AF_INET, "localhost", 9999, s)
+f = AsyncoreFanoutServer(socket.AF_INET, "0.0.0.0", 7331, s)
 
 asyncore.loop()
